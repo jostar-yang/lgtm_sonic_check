@@ -7,10 +7,7 @@
 # provides the components firmware management function
 #
 #############################################################################
-import sys, getopt
-import json
-import os.path
-import shutil
+
 import shlex
 import subprocess
 
@@ -33,7 +30,7 @@ class Component(ComponentBase):
 
     DEVICE_TYPE = "component"
 
-    def __init__(self, component_index):
+    def __init__(self, component_index=0):
         ComponentBase.__init__(self)
         self.index = component_index
         self.name = self.get_name()
@@ -50,7 +47,7 @@ class Component(ComponentBase):
             rc = process.poll()
             if rc != 0:
                 return False
-        except:
+        except Exception:
             return False
         return True
 
@@ -65,12 +62,10 @@ class Component(ComponentBase):
 
     def get_sysfs_value(self, addr, name):
         # Retrieves the cpld register value
-        #cmd = "echo {1} > {0}; cat {0}".format(SYSFS_PATH, addr)
         cmd = "cat {0}{1}/{2}".format(SYSFS_PATH, addr, name)
         p = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        raw_data, err = p.communicate()
-        print "raw_data=%s"%raw_data
+        raw_data, err = p.communicate()        
         if err is not '':
             return None
         return raw_data.strip()
@@ -82,15 +77,10 @@ class Component(ComponentBase):
             try:
                 cpld_addr = CPLD_ADDR_MAPPING[cpld_name]
                 cpld_version_raw=self.get_sysfs_value(cpld_addr, "version")
-                print "cpld_version_raw=%s"%cpld_version_raw
-                #cpld_version_raw = self.get_register_value(cpld_addr)
-                #cpld_version_str = "{}.{}".format(int(cpld_version_raw[2], 16), int(
-                #    cpld_version_raw[3], 16)) if cpld_version_raw is not None else 'None'
                 cpld_version[cpld_name] = "{}".format(int(cpld_version_raw,16))
             except Exception as e:
                 cpld_version[cpld_name] = 'None'
         
-        print"cpld_version=%s"%cpld_version
         return cpld_version
 
     def get_name(self):
@@ -133,24 +123,7 @@ class Component(ComponentBase):
         Returns:
             A boolean, True if install successfully, False if not
         """
-        if not os.path.isfile(image_path):
-            return False
- 
-        if self.name == "BIOS":
-            print "Not supported"
-            return False
- 
-        return self.__run_command(install_command)
+        raise NotImplementedError 
+        
 
-
-def main(argv):
-    print"Start to debug"
-    com=Component(0)
-    #print "cpld=%s"%com._Component__get_cpld_version()
-    #com.name="BIOS"
-    com.name="CPLD"
-    print"vernios=%s"%com.get_firmware_version()
-    
-if __name__ == "__main__":
-    main(sys.argv[1:])
         
