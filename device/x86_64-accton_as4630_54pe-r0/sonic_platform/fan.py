@@ -8,6 +8,10 @@
 #
 #############################################################################
 
+import json
+import math
+import os.path
+import sys
 
 try:
     from sonic_platform_base.fan_base import FanBase
@@ -15,6 +19,7 @@ except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
 PSU_FAN_MAX_RPM = 26688
+
 CPLD_I2C_PATH = "/sys/bus/i2c/devices/3-0060/fan_"
 PSU_HWMON_I2C_PATH ="/sys/bus/i2c/devices/{}-00{}/"
 PSU_I2C_MAPPING = {
@@ -37,12 +42,35 @@ class Fan(FanBase):
         self.fan_tray_index = fan_tray_index
         self.is_psu_fan = is_psu_fan
         
+        # Set hwmon path
+        
+        
+        #    0: "/sys/bus/i2c/drivers/as4630_54pe_cpld/3-0060/", 
+        #    1: "24-004b/hwmon/hwmon*/", 
+        #    2: "25-004a/hwmon/hwmon*/"
+        #}.get(self.index, None)
+       
+        
         if self.is_psu_fan:
             self.psu_index = psu_index
             self.psu_i2c_num = PSU_I2C_MAPPING[self.psu_index]["num"]
             self.psu_i2c_addr = PSU_I2C_MAPPING[self.psu_index]["addr"]
             self.psu_hwmon_path = PSU_HWMON_I2C_PATH.format(
                 self.psu_i2c_num, self.psu_i2c_addr)
+
+        # dx010 fan attributes
+        # Two EMC2305s located at i2c-13-4d and i2c-13-2e
+        # to control a dual-fan module.
+        self.emc2305_chip_mapping = [
+            {
+                'device': "13-002e",
+                'index_map': [2, 1, 4, 5, 3]
+            },
+            {
+                'device': "13-004d",
+                'index_map': [2, 4, 5, 3, 1]
+            }
+        ]
         
         FanBase.__init__(self)
 
@@ -60,7 +88,7 @@ class Fan(FanBase):
         try:
             with open(file_path, 'w') as fd:
                 fd.write(str(value))
-        except Exception:
+        except:
             return False
         return True
 
@@ -71,7 +99,7 @@ class Fan(FanBase):
             A string, either FAN_DIRECTION_INTAKE or FAN_DIRECTION_EXHAUST
             depending on fan direction
         """
-        
+        direction = self.FAN_DIRECTION_EXHAUST
 
         if not self.is_psu_fan:
             dir_str = "{}{}{}".format(CPLD_I2C_PATH, 'direction_', self.fan_tray_index)
@@ -81,6 +109,7 @@ class Fan(FanBase):
             else:
                 direction=self.FAN_DIRECTION_INTAKE
         else: #For PSU. YPEB1200AM that is F2B.
+            print"self.psu_hwmon_path=%s"%self.psu_hwmon_path
             direction=self.FAN_DIRECTION_EXHAUST
         return direction
 
@@ -101,6 +130,7 @@ class Fan(FanBase):
                 speed=100
         elif self.get_presence():            
             speed_path = "{}{}".format(CPLD_I2C_PATH, 'duty_cycle_percentage')
+            print"speed_path=%s"%speed_path
             speed=self.__read_txt_file(speed_path)
         return int(speed)
             
@@ -117,7 +147,7 @@ class Fan(FanBase):
             0   : when PWM mode is use
             pwm : when pwm mode is not use
         """
-        return False #Not supported
+        raise NotImplementedError
 
     def get_speed_tolerance(self):
         """
@@ -126,7 +156,8 @@ class Fan(FanBase):
             An integer, the percentage of variance from target speed which is
                  considered tolerable
         """
-        return False #Not supported
+        #Not supported
+        return False
 
     def set_speed(self, speed):
         """
@@ -154,7 +185,9 @@ class Fan(FanBase):
         Returns:
             bool: True if status LED state is set successfully, False if not
         """
-        return False #Not supported
+        #Not supported
+        return False
+
    
     def get_presence(self):
         """
@@ -162,10 +195,56 @@ class Fan(FanBase):
         Returns:
             bool: True if PSU is present, False if not
         """
-        present_path = "{}{}{}".format(CPLD_I2C_PATH, 'present_', self.fan_index+1)
+        present_path = "{}{}{}".format(CPLD_I2C_PATH, 'present_', self.fan_tray_index+1)
+        print "present_str=%s"%present_path
         val=self.__read_txt_file(present_path)
+        print"val=%s"%val 
+
         if not self.is_psu_fan:
             return int(val, 10)
         else:
             return True
         
+def main(argv):
+    print"Start to debug fan.py"
+    
+    my_fan=Fan(0, 0 , 0 ,0)
+    print "my_fan1 present =%d"%my_fan.get_presence()
+    my_fan=Fan(1, 0 , 0 ,0)
+    print "my_fan2 present =%d"%my_fan.get_presence()
+    my_fan=Fan(2, 0 , 0 ,0)
+    print "my_fan3 present =%d"%my_fan.get_presence()
+    
+    my_fan=Fan(0, 0 , 0 ,0)
+    print "my_fan1 speed =%d"%my_fan.get_speed()
+    my_fan=Fan(1, 0 , 0 ,0)
+    print "my_fan2 speed =%d"%my_fan.get_speed()
+    my_fan=Fan(2, 0 , 0 ,0)
+    print "my_fan3 speed =%d"%my_fan.get_speed()
+    
+    my_fan=Fan(0, 0 , 0 ,0)
+    my_fan.set_speed(50)
+    print "my_fan1 set speed= to 50%"
+    
+    
+    my_fan=Fan(0, 0 , 0 ,0)
+    print "my_fan1 dir =%s"%my_fan.get_direction()
+    my_fan=Fan(1, 0 , 0 ,0)
+    print "my_fan2 dir =%s"%my_fan.get_direction()
+    my_fan=Fan(2, 0 , 0 ,0)
+    print "my_fan3 dir =%s"%my_fan.get_direction()
+    
+    
+    my_fan=Fan(0, 0, 1 ,0)
+    print "my_fan psu1 speed =%d"%my_fan.get_speed()
+    my_fan=Fan(1, 0 , 1 ,1)
+    print "my_fan psu2 speed =%d"%my_fan.get_speed()
+    
+    my_fan=Fan(1, 0 , 1 ,0)
+    print "my_fan psu1 dir =%s"%my_fan.get_direction()
+    my_fan=Fan(2, 0 , 1 ,1)
+    print "my_fan psu2 dir =%s"%my_fan.get_direction()
+    
+    
+if __name__ == "__main__":
+    main(sys.argv[1:])

@@ -6,10 +6,13 @@
 # Watchdog contains an implementation of SONiC Platform Base API
 #
 #############################################################################
+import ctypes
 import fcntl
 import os
+import subprocess
+import time
 import array
-
+import sys
 
 
 try:
@@ -58,7 +61,10 @@ class Watchdog(WatchdogBase):
         self.watchdog, self.wdt_main_dev_name = self._get_wdt()
         self.status_path = "/sys/class/watchdog/%s/status" % self.wdt_main_dev_name
         self.state_path = "/sys/class/watchdog/%s/state" % self.wdt_main_dev_name
-        self.timeout_path = "/sys/class/watchdog/%s/timeout" % self.wdt_main_dev_name        
+        self.timeout_path = "/sys/class/watchdog/%s/timeout" % self.wdt_main_dev_name
+        print "self.state_path=%s"%self.state_path
+        print "self.status_path=%s"%self.status_path
+        print "self.timeout_path=%s"%self.timeout_path
         # Set default value
         self._disable()
         self.armed = False
@@ -74,7 +80,7 @@ class Watchdog(WatchdogBase):
 
     def _get_wdt(self):
         """
-        Retrieves  watchdog device
+        Retrieves watchdog device
         """
         wdt_main_dev_list = [dev for dev in os.listdir(
             "/dev/") if dev.startswith("watchdog") and self._is_wd_main(dev)]
@@ -231,3 +237,41 @@ class Watchdog(WatchdogBase):
 
         os.close(self.watchdog)
 
+def main(argv):
+    print"Start to debug watchdog.py"
+    
+    my_wdt=Watchdog()
+    print "Enable wdt!!!"
+    my_wdt.arm(10)
+    time.sleep(1)
+    #s_count = 12
+    #while (s_count > 0):
+    #    print 'The count is:', s_count
+    #    s_count = s_count -1
+    #    time.sleep(1)
+    print "Disable wdt!!!"
+    my_wdt._disable()
+    time.sleep(1)
+    #print "Test Keep alive"
+    print "Re-Enable wdt!!!"
+    my_wdt._enable()
+    s_count = 12
+    while (s_count > 0):
+        print 'The count is:', s_count
+        s_count = s_count -1
+        time.sleep(1)
+    #s_count = 20
+    #while (s_count > 0):
+    #    print 'Kick,  count is:', s_count
+    #    s_count = s_count -1
+    #    my_wdt._keepalive()
+    #    time.sleep(1)
+    #print "Stop Kick"
+    #s_count = 12
+    #while (s_count > 0):
+    #    print 'The count is:', s_count
+    #    s_count = s_count -1
+    #    time.sleep(1)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])    

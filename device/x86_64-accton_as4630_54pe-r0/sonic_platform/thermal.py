@@ -9,7 +9,9 @@
 #############################################################################
 
 import os
+import re
 import os.path
+import sys
 import glob
 
 try:
@@ -23,8 +25,9 @@ class Thermal(ThermalBase):
 
     THERMAL_NAME_LIST = []
     SYSFS_PATH = "/sys/bus/i2c/devices"
+    SS_CONFIG_PATH = "/usr/share/sonic/device/x86_64-cel_seastone-r0/sensors.conf"
 
-    def __init__(self, thermal_index=0):
+    def __init__(self, thermal_index):
         self.index = thermal_index
 
         # Add thermal name
@@ -40,6 +43,7 @@ class Thermal(ThermalBase):
         }.get(self.index, None)
           
         self.hwmon_path = "{}/{}".format(self.SYSFS_PATH, i2c_path)
+        print "self.hwmon_path=%s"%self.hwmon_path
         self.ss_key = self.THERMAL_NAME_LIST[self.index]
         self.ss_index = 1
 
@@ -58,6 +62,8 @@ class Thermal(ThermalBase):
         temp_file_path = os.path.join(self.hwmon_path, temp_file)
         raw_temp = self.__read_txt_file(temp_file_path)
         temp = float(raw_temp)/1000
+        #temp = (raw_temp)/1000
+        print"temp=%f"%temp        
         return "{:.3f}".format(temp)
 
     def __set_threshold(self, file_name, temperature):
@@ -98,8 +104,9 @@ class Thermal(ThermalBase):
         Returns:
             A boolean, True if threshold is set successfully, False if not
         """
-        #Not supported
+        print("Not supported")
         return False
+       #return is_set & file_set
 
     def get_name(self):
         """
@@ -117,8 +124,7 @@ class Thermal(ThermalBase):
         """
         temp_file = "temp{}_input".format(self.ss_index)
         temp_file_path = os.path.join(self.hwmon_path, temp_file)
-        raw_txt = self.__read_txt_file(temp_file_path)
-        return raw_txt!=None
+        return os.path.isfile(temp_file_path)
 
     def get_status(self):
         """
@@ -126,13 +132,30 @@ class Thermal(ThermalBase):
         Returns:
             A boolean value, True if device is operating properly, False if not
         """
-
-        file_str = "temp{}_input".format(self.ss_index)
-        file_path = os.path.join(self.hwmon_path, file_str)
-
-        raw_txt = self.__read_txt_file(file_path)
-        if raw_txt==None:
+        if not self.get_presence():
             return False
-        else:     
-            return int(raw_txt) != 0
 
+        fault_file = "temp{}_fault".format(self.ss_index)
+        fault_file_path = os.path.join(self.hwmon_path, fault_file)
+        if not os.path.isfile(fault_file_path):
+            return True
+
+        raw_txt = self.__read_txt_file(fault_file_path)
+        return int(raw_txt) == 0
+
+
+def main(argv):
+    print"Start to debug thermal.py"
+    my_thermal=Thermal(0)
+    print "my_thermal.get_temperature=%s"%my_thermal.get_temperature()
+    print "high_threshold=%s"%my_thermal.get_high_threshold()
+    my_thermal=Thermal(1)
+    print "my_thermal.get_temperature=%s"%my_thermal.get_temperature()
+    print "high_threshold=%s"%my_thermal.get_high_threshold()
+
+    my_thermal=Thermal(2)
+    print "my_thermal.get_temperature=%s"%my_thermal.get_temperature()
+    print "high_threshold=%s"%my_thermal.get_high_threshold()
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

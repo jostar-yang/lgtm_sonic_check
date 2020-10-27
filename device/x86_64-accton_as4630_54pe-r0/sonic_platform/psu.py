@@ -8,6 +8,8 @@
 #
 #############################################################################
 
+import os
+import sys
 #import sonic_platform
 
 try:
@@ -46,7 +48,7 @@ PSU_CPLD_I2C_MAPPING = {
 class Psu(PsuBase):
     """Platform-specific Psu class"""
 
-    def __init__(self, psu_index=0):
+    def __init__(self, psu_index):
         PsuBase.__init__(self)
         self.index = psu_index
        
@@ -117,8 +119,8 @@ class Psu(PsuBase):
         Returns:
             bool: True if status LED state is set successfully, False if not
         """
-        
-        return False  #Controlled by HW
+        #Controlled by HW
+        raise NotImplementedError
 
     def get_status_led(self):
         """
@@ -126,8 +128,8 @@ class Psu(PsuBase):
         Returns:
             A string, one of the predefined STATUS_LED_COLOR_* strings above
         """
-        
-        return False  #Controlled by HW
+        #Controlled by HW
+        raise NotImplementedError
 
     def get_temperature(self):
         """
@@ -147,7 +149,7 @@ class Psu(PsuBase):
             A float number, the high threshold temperature of PSU in Celsius
             up to nearest thousandth of one degree Celsius, e.g. 30.125
         """
-        return False #Not supported
+        raise NotImplementedError
 
     def get_voltage_high_threshold(self):
         """
@@ -197,5 +199,38 @@ class Psu(PsuBase):
         """
         power_path="{}{}".format(self.cpld_path, 'psu_power_good')
         val=self.__read_txt_file(power_path)
+        print "power_path=%s"%power_path
+        print"val=%d"%int(val, 10)
         return int(val, 10) == 1
 
+def main(argv):
+    print"Start to debug psu.py"
+    
+    my_psu=Psu(0)
+    print"PSU-1:"
+    print "get_name=%s"%my_psu.get_name()
+    print"get_presence=%d"%my_psu.get_presence()
+    print"get_powergood=%d"%my_psu.get_powergood_status()
+    #print"get_status=%d"%my_psu.get_status()
+    print"get_voltage=%0.2f"%my_psu.get_voltage()
+    print"get_current=%0.2f"%my_psu.get_current()
+    print"get_power=%0.2f"%my_psu.get_power()
+    print"get_temperature=%0.3f"%my_psu.get_temperature()
+    print"get_voltage_high_threshold=%0.2f"%my_psu.get_voltage_high_threshold()
+    print"get_voltage_low_threshold=%0.2f"%my_psu.get_voltage_low_threshold()
+    
+                            
+    my_psu=Psu(1)
+    print"PSU-2:"
+    print "get_name=%s"%my_psu.get_name()
+    print"get_presence=%d"%my_psu.get_presence()
+    print"get_powergood=%d"%my_psu.get_powergood_status()
+    print"get_voltage=%0.2f"%my_psu.get_voltage()
+    print"get_current=%0.2f"%my_psu.get_current()
+    print"get_power=%0.2f"%my_psu.get_power()
+    print"get_temperature=%0.3f"%my_psu.get_temperature()
+    print"get_voltage_high_threshold=%0.2f"%my_psu.get_voltage_high_threshold()
+    print"get_voltage_low_threshold=%0.2f"%my_psu.get_voltage_low_threshold()
+    
+if __name__ == "__main__":
+    main(sys.argv[1:])    

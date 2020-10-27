@@ -2,11 +2,14 @@
 
 
 try:
+    import glob
     import os
     import sys
+    import imp
     import re
+    from array import array
     from cStringIO import StringIO
-    
+    from sonic_platform_base.sonic_eeprom import eeprom_dts
     from sonic_platform_base.sonic_eeprom import eeprom_tlvinfo
 except ImportError, e:
     raise ImportError(str(e) + "- required module not found")
@@ -39,9 +42,8 @@ class Tlv(eeprom_tlvinfo.TlvInfoDecoder):
                     value = match.group(3).rstrip('\0')
 
                 _eeprom_info_dict[idx] = value
-            except Exception:
+            except:
                 pass
-               
         return _eeprom_info_dict
 
     def _load_eeprom(self):
@@ -49,7 +51,7 @@ class Tlv(eeprom_tlvinfo.TlvInfoDecoder):
         sys.stdout = StringIO()
         try:
             self.read_eeprom_db()
-        except Exception:
+        except:
             decode_output = sys.stdout.getvalue()
             sys.stdout = original_stdout
             return self.__parse_output(decode_output)
@@ -61,7 +63,7 @@ class Tlv(eeprom_tlvinfo.TlvInfoDecoder):
         if not os.path.exists(CACHE_ROOT):
             try:
                 os.makedirs(CACHE_ROOT)
-            except Exception:
+            except:
                 pass
 
         #
@@ -70,7 +72,7 @@ class Tlv(eeprom_tlvinfo.TlvInfoDecoder):
         #
         try:
             self.set_cache_name(os.path.join(CACHE_ROOT, CACHE_FILE))
-        except Exception:
+        except:
             pass
 
         e = self.read_eeprom()
@@ -79,7 +81,7 @@ class Tlv(eeprom_tlvinfo.TlvInfoDecoder):
 
         try:
             self.update_cache(e)
-        except Exception:
+        except:
             pass
 
         self.decode_eeprom(e)
@@ -101,3 +103,15 @@ class Tlv(eeprom_tlvinfo.TlvInfoDecoder):
     def get_mac(self):
         return self._eeprom.get('0x24', "Undefined.")
 
+
+
+def main(argv):
+    print"Start to debug eeprom.py"
+    my_tlv=Tlv()
+    #print "my_tlv.get_eeprom=%s"%my_tlv.get_eeprom()
+    print "my_tlv.get_mac=%s"%my_tlv.get_mac()
+    print "my_tlv.get_serial=%s"%my_tlv.get_serial()
+    print "my_tlv.get_eeprom=%s"%my_tlv.get_eeprom()
+    
+if __name__ == "__main__":
+    main(sys.argv[1:])
