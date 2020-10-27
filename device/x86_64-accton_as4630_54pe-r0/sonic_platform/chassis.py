@@ -76,7 +76,7 @@ class Chassis(ChassisBase):
 
     def get_base_mac(self):
         """
-        Retrieves the base MAC address for the  chassis
+        Retrieves the base MAC address for the chassis
         Returns:
             A string containing the MAC address in the format
             'XX:XX:XX:XX:XX:XX'
