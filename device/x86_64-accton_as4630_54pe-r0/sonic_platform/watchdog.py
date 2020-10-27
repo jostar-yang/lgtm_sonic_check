@@ -74,7 +74,7 @@ class Watchdog(WatchdogBase):
 
     def _get_wdt(self):
         """
-        Retrieves watchdog device
+        Retrieves  watchdog device
         """
         wdt_main_dev_list = [dev for dev in os.listdir(
             "/dev/") if dev.startswith("watchdog") and self._is_wd_main(dev)]
