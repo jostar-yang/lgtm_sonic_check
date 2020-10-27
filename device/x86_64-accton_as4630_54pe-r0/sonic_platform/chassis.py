@@ -8,11 +8,7 @@
 #
 #############################################################################
 
-import sys
-import re
 import os
-import subprocess
-import json
 
 try:
     from sonic_platform_base.chassis_base import ChassisBase
@@ -26,12 +22,12 @@ try:
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
-NUM_FAN_TRAY = 3
-NUM_FAN = 2
+NUM_FAN_TRAY = 2
+NUM_FAN = 3
 NUM_PSU = 2
-NUM_THERMAL = 2
+NUM_THERMAL = 3
 NUM_SFP = 6
-NUM_COMPONENT = 5
+NUM_COMPONENT = 2
 RESET_REGISTER = "0x103"
 HOST_REBOOT_CAUSE_PATH = "/host/reboot-cause/"
 PMON_REBOOT_CAUSE_PATH = "/usr/share/sonic/platform/api_files/reboot-cause/"
@@ -117,7 +113,7 @@ class Chassis(ChassisBase):
             to pass a description of the reboot cause.
         """
         description = 'None'
-        reboot_cause = self.REBOOT_CAUSE_HARDWARE_OTHER
+
 
         reboot_cause_path = (HOST_REBOOT_CAUSE_PATH + REBOOT_CAUSE_FILE) if self.__is_host(
         ) else PMON_REBOOT_CAUSE_PATH + REBOOT_CAUSE_FILE
@@ -147,14 +143,3 @@ class Chassis(ChassisBase):
 
         return (reboot_cause, description)
 
-
-def main(argv):
-    print"Start to debug eeprom.py"
-    my_chassis=Chassis()
-    
-    print "my_tlv.get_base_mac=%s"%my_tlv.get_base_mac()
-    print "my_tlv.get_serial_number=%s"%my_tlv.get_serial_number()
-    print "my_tlv.get_system_eeprom_info=%s"%my_tlv.get_system_eeprom_info()
-    
-if __name__ == "__main__":
-    main(sys.argv[1:])
